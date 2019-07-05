@@ -1,360 +1,259 @@
-
 <template>
-  <page-view :avatar="avatar" :title="false">
-    <div slot="headerContent">
-      <div class="title">{{ timeFix }}，{{ user.name }}<span class="welcome-text">，{{ welcome() }}</span></div>
-      <div>前端工程师 | 蚂蚁金服 - 某某某事业群 - VUE平台</div>
-    </div>
-    <div slot="extra">
-      <a-row class="more-info">
-        <a-col :span="8">
-          <head-info title="项目数" content="56" :center="false" :bordered="false"/>
-        </a-col>
-        <a-col :span="8">
-          <head-info title="团队排名" content="8/24" :center="false" :bordered="false"/>
-        </a-col>
-        <a-col :span="8">
-          <head-info title="项目访问" content="2,223" :center="false" />
-        </a-col>
-      </a-row>
-    </div>
-
+  <page-view>
+    <!-- 表单弹窗 -->
     <div>
-      <a-row :gutter="24">
-        <a-col :xl="16" :lg="24" :md="24" :sm="24" :xs="24">
-          <a-card
-            class="project-list"
-            :loading="loading"
-            style="margin-bottom: 24px;"
-            :bordered="false"
-            title="进行中的项目"
-            :body-style="{ padding: 0 }">
-            <a slot="extra">全部项目</a>
-            <div>
-              <a-card-grid class="project-card-grid" :key="i" v-for="(item, i) in projects">
-                <a-card :bordered="false" :body-style="{ padding: 0 }">
-                  <a-card-meta>
-                    <div slot="title" class="card-title">
-                      <a-avatar size="small" :src="item.cover"/>
-                      <a>{{ item.title }}</a>
-                    </div>
-                    <div slot="description" class="card-description">
-                      {{ item.description }}
-                    </div>
-                  </a-card-meta>
-                  <div class="project-item">
-                    <a href="/#/">科学搬砖组</a>
-                    <span class="datetime">9小时前</span>
-                  </div>
-                </a-card>
-              </a-card-grid>
-            </div>
-          </a-card>
+      <a-modal
+        title="创建新固件"
+        :visible="visible"
+        @ok="handleOk"
+        :confirmLoading="confirmLoading"
+        @cancel="handleCancel"
+      >
+        <a-form :form="form" @submit="handleSubmit">
+          <a-form-item label="APK名称" :label-col="{ span: 6 }" :wrapper-col="{ span: 15 }">
+            <a-input
+              placeholder="请输入APK名称"
+              v-decorator="[
+          'note',
+          {rules: [{ required: true, message: 'Please input your note!' }]}
+        ]"
+            />
+          </a-form-item>
+          <a-form-item label="版本号" :label-col="{ span: 6 }" :wrapper-col="{ span: 15 }">
+            <a-input
+              placeholder="请输入版本号"
+              v-decorator="[
+          'gender',
+          {rules: [{ required: true, message: 'Please input your note!' }]}
+        ]"
+            />
+          </a-form-item>
 
-          <a-card :loading="loading" title="动态" :bordered="false">
-            <a-list>
-              <a-list-item :key="index" v-for="(item, index) in activities">
-                <a-list-item-meta>
-                  <a-avatar slot="avatar" :src="item.user.avatar" />
-                  <div slot="title">
-                    <span>{{ item.user.nickname }}</span>&nbsp;
-                    在&nbsp;<a href="#">{{ item.project.name }}</a>&nbsp;
-                    <span>{{ item.project.action }}</span>&nbsp;
-                    <a href="#">{{ item.project.event }}</a>
-                  </div>
-                  <div slot="description">{{ item.time }}</div>
-                </a-list-item-meta>
-              </a-list-item>
-            </a-list>
-          </a-card>
-        </a-col>
-        <a-col
-          style="padding: 0 12px"
-          :xl="8"
-          :lg="24"
-          :md="24"
-          :sm="24"
-          :xs="24">
-          <a-card title="快速开始 / 便捷导航" style="margin-bottom: 24px" :bordered="false" :body-style="{padding: 0}">
-            <div class="item-group">
-              <a>操作一</a>
-              <a>操作二</a>
-              <a>操作三</a>
-              <a>操作四</a>
-              <a>操作五</a>
-              <a>操作六</a>
-              <a-button size="small" type="primary" ghost icon="plus">添加</a-button>
-            </div>
-          </a-card>
-          <a-card title="XX 指数" style="margin-bottom: 24px" :loading="radarLoading" :bordered="false" :body-style="{ padding: 0 }">
-            <div style="min-height: 400px;">
-              <!-- :scale="scale" :axis1Opts="axis1Opts" :axis2Opts="axis2Opts"  -->
-              <radar :data="radarData" />
-            </div>
-          </a-card>
-          <a-card :loading="loading" title="团队" :bordered="false">
-            <div class="members">
-              <a-row>
-                <a-col :span="12" v-for="(item, index) in teams" :key="index">
-                  <a>
-                    <a-avatar size="small" :src="item.avatar" />
-                    <span class="member">{{ item.name }}</span>
-                  </a>
-                </a-col>
-              </a-row>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
+          <a-form-item label="文件" :label-col="{ span: 6 }" :wrapper-col="{ span: 15 }">
+            <a
+              v-decorator="[
+          'gender',
+          {rules: [{ required: true, message: 'Please input your note!' }]}
+        ]"
+            />
+            <a-textarea placeholder="Basic usage" :rows="4" />
+          </a-form-item>
+          <a-form-item :wrapper-col="{ span: 12, offset: 5 }"></a-form-item>
+        </a-form>
+      </a-modal>
+    </div>
+    <div>
+      <!-- table -->
+      <a-card>
+        <a-button type="primary" class="editable-add-btn" @click="newMember">
+          <a-icon type="plus-circle" />创建新固件
+        </a-button>
+        <a-table :columns="columns" :dataSource="data" :pagination="false" :loading="memberLoading">
+          <template
+            v-for="(col, i) in ['name', 'workId', 'department']"
+            :slot="col"
+            slot-scope="text, record"
+          >
+            <a-input
+              :key="col"
+              v-if="record.editable"
+              style="margin: -5px 0"
+              :value="text"
+              :placeholder="columns[i].title"
+              @change="e => handleChange(e.target.value, record.key, col)"
+            />
+            <template v-else>{{ text }}</template>
+          </template>
+          <template slot="operation" slot-scope="text, record">
+            <template v-if="record.editable">
+              <span v-if="record.isNew">
+                <a @click="saveRow(record)">添加</a>
+                <a-divider type="vertical" />
+                <a-popconfirm title="是否要删除此行？" @confirm="remove(record.key)">
+                  <a>删除</a>
+                </a-popconfirm>
+              </span>
+              <span v-else>
+                <a @click="saveRow(record)">保存</a>
+                <a-divider type="vertical" />
+                <a @click="cancel(record.key)">取消</a>
+              </span>
+            </template>
+            <span v-else>
+              <a @click="toggle(record.key)">编辑</a>
+              <a-divider type="vertical" />
+              <a-popconfirm title="是否要删除此行？" @confirm="remove(record.key)">
+                <a>删除</a>
+              </a-popconfirm>
+            </span>
+          </template>
+        </a-table>
+      </a-card>
     </div>
   </page-view>
 </template>
-
 <script>
-import { timeFix } from '@/utils/util'
-import { mapGetters } from 'vuex'
-
+import RepositoryForm from '../form/advancedForm/AdvancedForm'
+import TaskForm from '../form/advancedForm/TaskForm'
+import FooterToolBar from '@/components/FooterToolbar'
+import { mixin, mixinDevice } from '@/utils/mixin'
 import { PageView } from '@/layouts'
-import HeadInfo from '@/components/tools/HeadInfo'
-import { Radar } from '@/components'
-
-import { getRoleList, getServiceList } from '@/api/manage'
-
-const DataSet = require('@antv/data-set')
 
 export default {
-  name: 'Workplace',
+  name: 'AdvancedForm',
+  mixins: [mixin, mixinDevice],
   components: {
-    PageView,
-    HeadInfo,
-    Radar
+    FooterToolBar,
+    RepositoryForm,
+    TaskForm,
+    PageView
   },
-  data () {
+  data() {
     return {
-      timeFix: timeFix(),
-      avatar: '',
-      user: {},
+      description: '高级表单常见于一次性输入和提交大批量数据的场景。',
+      loading: false,
+      memberLoading: false,
+      loading: false,
+      visible: false,
 
-      projects: [],
-      loading: true,
-      radarLoading: true,
-      activities: [],
-      teams: [],
-
-      // data
-      axis1Opts: {
-        dataKey: 'item',
-        line: null,
-        tickLine: null,
-        grid: {
-          lineStyle: {
-            lineDash: null
-          },
-          hideFirstLine: false
+      // table
+      columns: [
+        {
+          title: '成员姓名',
+          dataIndex: 'name',
+          key: 'name',
+          width: '20%',
+          scopedSlots: { customRender: 'name' }
+        },
+        {
+          title: '工号',
+          dataIndex: 'workId',
+          key: 'workId',
+          width: '20%',
+          scopedSlots: { customRender: 'workId' }
+        },
+        {
+          title: '所属部门',
+          dataIndex: 'department',
+          key: 'department',
+          width: '40%',
+          scopedSlots: { customRender: 'department' }
+        },
+        {
+          title: '操作',
+          key: 'action',
+          scopedSlots: { customRender: 'operation' }
         }
-      },
-      axis2Opts: {
-        dataKey: 'score',
-        line: null,
-        tickLine: null,
-        grid: {
-          type: 'polygon',
-          lineStyle: {
-            lineDash: null
-          }
-        }
-      },
-      scale: [{
-        dataKey: 'score',
-        min: 0,
-        max: 80
-      }],
-      axisData: [
-        { item: '引用', a: 70, b: 30, c: 40 },
-        { item: '口碑', a: 60, b: 70, c: 40 },
-        { item: '产量', a: 50, b: 60, c: 40 },
-        { item: '贡献', a: 40, b: 50, c: 40 },
-        { item: '热度', a: 60, b: 70, c: 40 },
-        { item: '引用', a: 70, b: 50, c: 40 }
       ],
-      radarData: []
-    }
-  },
-  computed: {
-    userInfo () {
-      return this.$store.getters.userInfo
-    }
-  },
-  created () {
-    this.user = this.userInfo
-    this.avatar = this.userInfo.avatar
+      data: [
+        {
+          key: '1',
+          name: '小明',
+          workId: '001',
+          editable: false,
+          department: '行政部'
+        },
+        {
+          key: '2',
+          name: '李莉',
+          workId: '002',
+          editable: false,
+          department: 'IT部'
+        },
+        {
+          key: '3',
+          name: '王小帅',
+          workId: '003',
+          editable: false,
+          department: '财务部'
+        }
+      ],
 
-    getRoleList().then(res => {
-      console.log('workplace -> call getRoleList()', res)
-    })
-
-    getServiceList().then(res => {
-      console.log('workplace -> call getServiceList()', res)
-    })
-  },
-  mounted () {
-    this.getProjects()
-    this.getActivity()
-    this.getTeams()
-    this.initRadar()
+      errors: []
+    }
   },
   methods: {
-    ...mapGetters(['nickname', 'welcome']),
-    getProjects () {
-      this.$http.get('/list/search/projects')
-        .then(res => {
-          this.projects = res.result && res.result.data
-          this.loading = false
-        })
+    //取消表单默认提交
+    handleSubmit(e) {
+      e.preventDefault()
     },
-    getActivity () {
-      this.$http.get('/workplace/activity')
-        .then(res => {
-          this.activities = res.result
-        })
-    },
-    getTeams () {
-      this.$http.get('/workplace/teams')
-        .then(res => {
-          this.teams = res.result
-        })
-    },
-    initRadar () {
-      this.radarLoading = true
 
-      this.$http.get('/workplace/radar')
-        .then(res => {
-          const dv = new DataSet.View().source(res.result)
-          dv.transform({
-            type: 'fold',
-            fields: ['个人', '团队', '部门'],
-            key: 'user',
-            value: 'score'
-          })
+    //添加
+    newMember() {
+      const length = this.data.length
+      this.visible = true
+      this.data.push({
+        key: length === 0 ? '1' : (parseInt(this.data[length - 1].key) + 1).toString(),
+        name: '',
+        workId: '',
+        department: '',
+        editable: true,
+        isNew: true
+      })
+    },
+    handleOk(e) {
+      this.loading = true
+      setTimeout(() => {
+        this.visible = false
+        this.loading = false
+      }, 3000)
+    },
+    handleCancel(e) {
+      this.visible = false
+    },
+    //删除信息
+    remove(key) {
+      const newData = this.data.filter(item => item.key !== key)
+      this.data = newData
+    },
+    saveRow(record) {
+      this.memberLoading = true
+      const { key, name, workId, department } = record
+      if (!name || !workId || !department) {
+        this.memberLoading = false
+        this.$message.error('请填写完整成员信息。')
+        return
+      }
 
-          this.radarData = dv.rows
-          this.radarLoading = false
-        })
+      // 模拟网络请求、卡顿 800ms
+      new Promise(resolve => {
+        setTimeout(() => {
+          resolve({ loop: false })
+        }, 800)
+      }).then(() => {
+        const target = this.data.filter(item => item.key === key)[0]
+        target.editable = false
+        target.isNew = false
+        this.memberLoading = false
+      })
+    },
+
+    //编辑信息
+    toggle(key) {
+      const target = this.data.filter(item => item.key === key)[0]
+      target.editable = !target.editable
+    },
+
+    //绑定文本框输入的值
+    handleChange(value, key, column) {
+      const newData = [...this.data]
+      const target = newData.filter(item => key === item.key)[0]
+      if (target) {
+        target[column] = value
+        this.data = newData
+      }
+    },
+
+    //取消编辑操作
+    cancel(key) {
+      const target = this.data.filter(item => item.key === key)[0]
+      target.editable = false
     }
   }
 }
 </script>
-
-<style lang="less" scoped>
-  .project-list {
-
-    .card-title {
-      font-size: 0;
-
-      a {
-        color: rgba(0, 0, 0, 0.85);
-        margin-left: 12px;
-        line-height: 24px;
-        height: 24px;
-        display: inline-block;
-        vertical-align: top;
-        font-size: 14px;
-
-        &:hover {
-          color: #1890ff;
-        }
-      }
-    }
-    .card-description {
-      color: rgba(0, 0, 0, 0.45);
-      height: 44px;
-      line-height: 22px;
-      overflow: hidden;
-    }
-    .project-item {
-      display: flex;
-      margin-top: 8px;
-      overflow: hidden;
-      font-size: 12px;
-      height: 20px;
-      line-height: 20px;
-      a {
-        color: rgba(0, 0, 0, 0.45);
-        display: inline-block;
-        flex: 1 1 0;
-
-        &:hover {
-          color: #1890ff;
-        }
-      }
-      .datetime {
-        color: rgba(0, 0, 0, 0.25);
-        flex: 0 0 auto;
-        float: right;
-      }
-    }
-    .ant-card-meta-description {
-      color: rgba(0, 0, 0, 0.45);
-      height: 44px;
-      line-height: 22px;
-      overflow: hidden;
-    }
-  }
-
-  .item-group {
-    padding: 20px 0 8px 24px;
-    font-size: 0;
-    a {
-      color: rgba(0, 0, 0, 0.65);
-      display: inline-block;
-      font-size: 14px;
-      margin-bottom: 13px;
-      width: 25%;
-    }
-  }
-
-  .members {
-    a {
-      display: block;
-      margin: 12px 0;
-      line-height: 24px;
-      height: 24px;
-      .member {
-        font-size: 14px;
-        color: rgba(0, 0, 0, .65);
-        line-height: 24px;
-        max-width: 100px;
-        vertical-align: top;
-        margin-left: 12px;
-        transition: all 0.3s;
-        display: inline-block;
-      }
-      &:hover {
-        span {
-          color: #1890ff;
-        }
-      }
-    }
-  }
-
-  .mobile {
-
-    .project-list {
-
-      .project-card-grid {
-        width: 100%;
-      }
-    }
-
-    .more-info {
-      border: 0;
-      padding-top: 16px;
-      margin: 16px 0 16px;
-    }
-
-    .headerContent .title .welcome-text {
-      display: none;
-    }
-  }
-
+<style scoped>
+.editable-add-btn {
+  margin-bottom: 10px;
+}
 </style>

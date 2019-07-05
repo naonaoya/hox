@@ -80,6 +80,7 @@
       size="default"
       :columns="columns"
       :data="loadData"
+      
       :alert="{ show: true, clear: true }"
       :rowSelection="{ selectedRowKeys: this.selectedRowKeys, onChange: this.onSelectChange }"
     >
@@ -111,7 +112,6 @@
         </div>
       </template>
     </s-table>
-
   </a-card>
 </template>
 
@@ -146,6 +146,7 @@ export default {
           dataIndex: 'callNo',
           width: '150px',
           sorter: true,
+          className:'column',
           needTotal: true,
           scopedSlots: { customRender: 'callNo' }
           // customRender: (text) => text + ' 次'
@@ -264,5 +265,8 @@ export default {
     .fold {
       width: 100%;
     }
+  }
+  .ant-table-body .ant-table-thead > tr > th{
+    background-color: red;
   }
 </style>

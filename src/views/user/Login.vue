@@ -5,7 +5,7 @@
       class="user-layout-login"
       ref="formLogin"
       :form="form"
-      @submit="handleSubmit"
+      @submit.prevent="handleSubmit"
     >
       <a-tabs
         :activeKey="customActiveKey"
@@ -18,12 +18,13 @@
               size="large"
               type="text"
               placeholder="账户: admin"
+              v-model="user.username"
               v-decorator="[
                 'username',
                 {rules: [{ required: true, message: '请输入帐户名或邮箱地址' }, { validator: handleUsernameOrEmail }], validateTrigger: 'change'}
               ]"
             >
-              <a-icon slot="prefix" type="user" :style="{ color: 'rgba(0,0,0,.25)' }"/>
+              <a-icon slot="prefix" type="user" :style="{ color: 'rgba(0,0,0,.25)' }" />
             </a-input>
           </a-form-item>
 
@@ -31,6 +32,7 @@
             <a-input
               size="large"
               type="password"
+              v-model="user.password"
               autocomplete="false"
               placeholder="密码: admin or ant.design"
               v-decorator="[
@@ -38,11 +40,11 @@
                 {rules: [{ required: true, message: '请输入密码' }], validateTrigger: 'blur'}
               ]"
             >
-              <a-icon slot="prefix" type="lock" :style="{ color: 'rgba(0,0,0,.25)' }"/>
+              <a-icon slot="prefix" type="lock" :style="{ color: 'rgba(0,0,0,.25)' }" />
             </a-input>
           </a-form-item>
         </a-tab-pane>
-        <a-tab-pane key="tab2" tab="手机号登录">
+        <!-- <a-tab-pane key="tab2" tab="手机号登录">
           <a-form-item>
             <a-input size="large" type="text" placeholder="手机号" v-decorator="['mobile', {rules: [{ required: true, pattern: /^1[34578]\d{9}$/, message: '请输入正确的手机号' }], validateTrigger: 'change'}]">
               <a-icon slot="prefix" type="mobile" :style="{ color: 'rgba(0,0,0,.25)' }"/>
@@ -67,7 +69,7 @@
               ></a-button>
             </a-col>
           </a-row>
-        </a-tab-pane>
+        </a-tab-pane>-->
       </a-tabs>
 
       <a-form-item>
@@ -120,12 +122,15 @@ import TwoStepCaptcha from '@/components/tools/TwoStepCaptcha'
 import { mapActions } from 'vuex'
 import { timeFix } from '@/utils/util'
 import { getSmsCaptcha, get2step } from '@/api/login'
+import { axios } from '@/utils/request'
+import { ACCESS_TOKEN } from '@/store/mutation-types'
+import Vue from 'vue'
 
 export default {
   components: {
     TwoStepCaptcha
   },
-  data () {
+  data() {
     return {
       customActiveKey: 'tab1',
       loginBtn: false,
@@ -140,11 +145,16 @@ export default {
         // login type: 0 email, 1 username, 2 telephone
         loginType: 0,
         smsSendBtn: false
-      }
+      },
+      user: {
+        username: '',
+        password: ''
+      },
+      errors: {}
     }
   },
-  created () {
-    get2step({ })
+  created() {
+    get2step({})
       .then(res => {
         this.requiredTwoStepCaptcha = res.result.stepCode
       })
@@ -156,7 +166,7 @@ export default {
   methods: {
     ...mapActions(['Login', 'Logout']),
     // handler
-    handleUsernameOrEmail (rule, value, callback) {
+    handleUsernameOrEmail(rule, value, callback) {
       const { state } = this
       const regex = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((\.[a-zA-Z0-9_-]{2,3}){1,2})$/
       if (regex.test(value)) {
@@ -166,46 +176,48 @@ export default {
       }
       callback()
     },
-    handleTabClick (key) {
+    handleTabClick(key) {
       this.customActiveKey = key
       // this.form.resetFields()
     },
-    handleSubmit (e) {
+
+    /**
+     * 登录
+     */
+    handleSubmit(e) {
+      // console.log(Vue.ls.get(ACCESS_TOKEN))
+
+      axios({
+        url: '/system/login',
+        method: 'post',
+        data: this.user
+      })
+        .then(res => {
+          var s = 'error'
+          if (res.status) {
+            s = 'success'
+          }
+          this.$notification[s]({
+            message: '提示',
+            description: res.msg,
+            duration: 4
+          })
+          /**
+           * 存储token到ls
+           */
+          const { token } = Vue.ls.set(ACCESS_TOKEN, res.data, 7 * 24 * 60 * 60 * 1000)
+          // if (res.status==200) {
+            // }
+            this.$router.push('register')
+        })
+        .catch(err => {})
+    },
+    getCaptcha(e) {
       e.preventDefault()
       const {
         form: { validateFields },
-        state,
-        customActiveKey,
-        Login
+        state
       } = this
-
-      state.loginBtn = true
-
-      const validateFieldsKey = customActiveKey === 'tab1' ? ['username', 'password'] : ['mobile', 'captcha']
-
-      validateFields(validateFieldsKey, { force: true }, (err, values) => {
-        if (!err) {
-          console.log('login form', values)
-          const loginParams = { ...values }
-          delete loginParams.username
-          loginParams[!state.loginType ? 'email' : 'username'] = values.username
-          loginParams.password = md5(values.password)
-          Login(loginParams)
-            .then((res) => this.loginSuccess(res))
-            .catch(err => this.requestFailed(err))
-            .finally(() => {
-              state.loginBtn = false
-            })
-        } else {
-          setTimeout(() => {
-            state.loginBtn = false
-          }, 600)
-        }
-      })
-    },
-    getCaptcha (e) {
-      e.preventDefault()
-      const { form: { validateFields }, state } = this
 
       validateFields(['mobile'], { force: true }, (err, values) => {
         if (!err) {
@@ -220,33 +232,35 @@ export default {
           }, 1000)
 
           const hide = this.$message.loading('验证码发送中..', 0)
-          getSmsCaptcha({ mobile: values.mobile }).then(res => {
-            setTimeout(hide, 2500)
-            this.$notification['success']({
-              message: '提示',
-              description: '验证码获取成功，您的验证码为：' + res.result.captcha,
-              duration: 8
+          getSmsCaptcha({ mobile: values.mobile })
+            .then(res => {
+              setTimeout(hide, 2500)
+              this.$notification['success']({
+                message: '提示',
+                description: '验证码获取成功，您的验证码为：' + res.result.captcha,
+                duration: 8
+              })
             })
-          }).catch(err => {
-            setTimeout(hide, 1)
-            clearInterval(interval)
-            state.time = 60
-            state.smsSendBtn = false
-            this.requestFailed(err)
-          })
+            .catch(err => {
+              setTimeout(hide, 1)
+              clearInterval(interval)
+              state.time = 60
+              state.smsSendBtn = false
+              this.requestFailed(err)
+            })
         }
       })
     },
-    stepCaptchaSuccess () {
+    stepCaptchaSuccess() {
       this.loginSuccess()
     },
-    stepCaptchaCancel () {
+    stepCaptchaCancel() {
       this.Logout().then(() => {
         this.loginBtn = false
         this.stepCaptchaVisible = false
       })
     },
-    loginSuccess (res) {
+    loginSuccess(res) {
       console.log(res)
       this.$router.push({ name: 'dashboard' })
       // 延迟 1 秒显示欢迎信息
@@ -256,14 +270,14 @@ export default {
           description: `${timeFix()}，欢迎回来`
         })
       }, 1000)
-    },
-    requestFailed (err) {
-      this.$notification['error']({
-        message: '错误',
-        description: ((err.response || {}).data || {}).message || '请求出现错误，请稍后再试',
-        duration: 4
-      })
     }
+    // requestFailed(err) {
+    //   this.$notification['error']({
+    //     message: '错误',
+    //     description: ((err.response || {}).data || {}).message || '请求出现错误，请稍后再试',
+    //     duration: 4
+    //   })
+    // }
   }
 }
 </script>
